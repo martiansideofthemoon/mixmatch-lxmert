@@ -1,6 +1,7 @@
 import itertools
 import collections
 import glob
+import getpass
 import os
 import datetime
 import subprocess
@@ -38,9 +39,11 @@ combinations = list(itertools.product(*value_hyperparameters))
 
 scripts = []
 
+username = getpass.getuser()
+
 for combo in combinations:
     # Write the scheduler scripts
-    with open("nlvr2_finetune_template.sh", 'r') as f:
+    with open("nlvr2_finetune_template_%s.sh" % username, 'r') as f:
         schedule_script = f.read()
     combo = {k[0]: v for (k, v) in zip(key_hyperparameters, combo)}
 
@@ -71,7 +74,7 @@ for combo in combinations:
     subprocess.check_output('chmod +x %s' % script_name, shell=True)
 
     # Update experiment logs
-    output = "Script Name = " + script_name + "\n" + \
+    output = "Script Name = " + script_name + " by " + username + "\n" + \
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M") + "\n" + \
         top_details + "\n" + \
         lower_details + "\n\n"
