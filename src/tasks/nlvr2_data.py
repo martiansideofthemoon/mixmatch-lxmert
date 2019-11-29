@@ -64,6 +64,8 @@ class NLVR2TorchDataset(Dataset):
             topk = TINY_IMG_NUM
         elif args.fast:
             topk = FAST_IMG_NUM
+        elif args.num_images:
+            topk = args.num_images
         else:
             topk = -1
 
@@ -84,6 +86,7 @@ class NLVR2TorchDataset(Dataset):
         for datum in self.raw_dataset.data:
             if datum['img0'] in self.imgid2img and datum['img1'] in self.imgid2img:
                 self.data.append(datum)
+
         print("Use %d data in torch dataset" % (len(self.data)))
         print()
 

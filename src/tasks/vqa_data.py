@@ -63,6 +63,7 @@ class VQADataset:
         # Answers
         self.ans2label = json.load(open("data/vqa/trainval_ans2label.json"))
         self.label2ans = json.load(open("data/vqa/trainval_label2ans.json"))
+
         assert len(self.ans2label) == len(self.label2ans)
 
     @property
@@ -88,6 +89,8 @@ class VQATorchDataset(Dataset):
             topk = TINY_IMG_NUM
         elif args.fast:
             topk = FAST_IMG_NUM
+        elif args.num_images:
+            topk = args.num_images
         else:
             topk = None
 
@@ -96,7 +99,7 @@ class VQATorchDataset(Dataset):
         for split in dataset.splits:
             # Minival is 5K images in MS COCO, which is used in evaluating VQA/LXMERT-pre-training.
             # It is saved as the top 5K features in val2014_***.tsv
-            load_topk = 5000 if (split == 'minival' and topk is None) else topk
+            load_topk = 5000 if (split == 'minival') else topk
             img_data.extend(load_obj_tsv(
                 os.path.join(MSCOCO_IMGFEAT_ROOT, '%s_obj36.tsv' % (SPLIT2NAME[split])),
                 topk=load_topk))
@@ -111,6 +114,7 @@ class VQATorchDataset(Dataset):
         for datum in self.raw_dataset.data:
             if datum['img_id'] in self.imgid2img:
                 self.data.append(datum)
+
         print("Use %d data in torch dataset" % (len(self.data)))
         print()
 

@@ -5,6 +5,7 @@ import sys
 import csv
 import base64
 import time
+import tqdm
 
 import numpy as np
 

@@ -25,6 +25,7 @@ def get_tuple(splits: str, bs:int, shuffle=False, drop_last=False) -> DataTuple:
         shuffle=shuffle, num_workers=args.num_workers,
         drop_last=drop_last, pin_memory=True
     )
+    print("Final length of splits %s = %d" % (splits, len(tset)))
 
     return DataTuple(dataset=dset, loader=data_loader, evaluator=evaluator)
 

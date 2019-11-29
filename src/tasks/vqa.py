@@ -27,6 +27,8 @@ def get_data_tuple(splits: str, bs:int, shuffle=False, drop_last=False) -> DataT
         drop_last=drop_last, pin_memory=True
     )
 
+    print("Final length of splits %s = %d" % (splits, len(tset)))
+
     return DataTuple(dataset=dset, loader=data_loader, evaluator=evaluator)
 
 

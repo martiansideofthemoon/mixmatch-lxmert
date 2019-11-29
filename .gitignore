@@ -1,3 +1,10 @@
 *.caffemodel
 *.tsv
 /snap
+*.json
+schedulers/*.sh
+logs/*.txt
+lxmert-venv
+saved_models/*_*
+data/
+
