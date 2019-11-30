@@ -6,6 +6,7 @@ import json
 import numpy as np
 from torch.utils.data import Dataset
 
+
 from param import args
 from utils import load_obj_tsv
 
@@ -36,7 +37,10 @@ class NLVR2Dataset:
         # Loading datasets to data
         self.data = []
         for split in self.splits:
+            if split == 'self_train':
+                split = 'train'
             self.data.extend(json.load(open("data/nlvr2/%s.json" % split)))
+
         print("Load %d data from split(s) %s." % (len(self.data), self.name))
 
         # List to dict (for evaluation and others)
@@ -56,6 +60,7 @@ FIELDNAMES = ["img_id", "img_h", "img_w", "objects_id", "objects_conf",
 FIELDNAMES would be keys in the dict returned by load_obj_tsv.
 """
 class NLVR2TorchDataset(Dataset):
+
     def __init__(self, dataset: NLVR2Dataset):
         super().__init__()
         self.raw_dataset = dataset
@@ -71,12 +76,24 @@ class NLVR2TorchDataset(Dataset):
 
         # Loading detection features to img_data
         img_data = []
-        if 'train' in dataset.splits:
+
+        if 'combined_train' in dataset.splits:
+            # returns all the images 
+            img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/train_obj36.tsv', topk=None))
+
+        if 'self_train' in dataset.splits:
+            # returns the images other than topk
+            img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/train_obj36.tsv', topk=topk, leftover=True))
+
+        elif 'train' in dataset.splits:
             img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/train_obj36.tsv', topk=topk))
+
         if 'valid' in dataset.splits:
             img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/valid_obj36.tsv', topk=topk))
+
         if 'test' in dataset.name:
             img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/test_obj36.tsv', topk=topk))
+
         self.imgid2img = {}
         for img_datum in img_data:
             self.imgid2img[img_datum['img_id']] = img_datum

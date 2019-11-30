@@ -115,6 +115,7 @@ class NLVR2:
 
         self.save("LAST")
 
+
     def predict(self, eval_tuple: DataTuple, dump=None):
         self.model.eval()
         dset, loader, evaluator = eval_tuple
@@ -146,9 +147,69 @@ class NLVR2:
         self.model.load_state_dict(state_dict)
 
 
+    # Update labels in dset for self_training
+    def updated_dataset_for_self_train(self):
+
+        # Create a new tuple of remaining data samples
+        splits = 'self_train'
+        leftover_tuple = get_tuple(splits, bs=args.batch_size, shuffle=False, drop_last=False)
+
+        quesid2ans = self.predict(leftover_tuple)
+        dset, loader, evaluator = leftover_tuple
+
+        for qid, ans in quesid2ans.items():
+                for datum in dset.data:
+                    if datum['uid'] == qid:
+                        datum['label'] = ans
+
+        dset.splits = 'combined_train'
+        return dset
+
+    def reinitialize_NLVR2(self):
+            # Update train_tuple
+            dset = self.updated_dataset_for_self_train()
+            tset = NLVR2TorchDataset(dset)
+            evaluator = NLVR2Evaluator(dset)
+            data_loader = DataLoader(
+                tset, batch_size=args.batch_size,
+                shuffle=True, num_workers=args.num_workers,
+                drop_last=True, pin_memory=True
+            )
+            self.train_tuple = DataTuple(dataset=dset, loader=data_loader, evaluator=evaluator)
+
+            # Load pre-trained weights before retraining
+            if args.load_lxmert is not None:
+                self.model.lxrt_encoder.load(args.load_lxmert)
+
+            # GPU options
+            if args.multiGPU:
+                self.model.lxrt_encoder.multi_gpu()
+            self.model = self.model.cuda()
+
+            # Loss
+            self.mce_loss = nn.CrossEntropyLoss(ignore_index=-1)
+
+            # Update the optimizer 
+            if 'bert' in args.optim:
+                batch_per_epoch = len(self.train_tuple.loader)
+                t_total = int(batch_per_epoch * args.epochs)
+                print("Total Iters: %d" % t_total)
+                from lxrt.optimization import BertAdam
+                self.optim = BertAdam(list(self.model.parameters()),
+                                      lr=args.lr,
+                                      warmup=0.1,
+                                      t_total=t_total)
+            else:
+                self.optim = args.optimizer(list(self.model.parameters()), args.lr)
+
+
+
+
 if __name__ == "__main__":
+
     # Build Class
     nlvr2 = NLVR2()
+
 
     # Load Model
     if args.load is not None:
@@ -173,11 +234,26 @@ if __name__ == "__main__":
         else:
             assert False, "No such test option for %s" % args.test
     else:
-        print('Splits in Train data:', nlvr2.train_tuple.dataset.splits)
-        if nlvr2.valid_tuple is not None:
-            print('Splits in Valid data:', nlvr2.valid_tuple.dataset.splits)
-        else:
-            print("DO NOT USE VALIDATION")
-        nlvr2.train(nlvr2.train_tuple, nlvr2.valid_tuple)
+        if args.train == 'train':
+            print('Splits in Train data:', nlvr2.train_tuple.dataset.splits)
+
+            if nlvr2.valid_tuple is not None:
+                print('Splits in Valid data:', nlvr2.valid_tuple.dataset.splits)
+
+            else:
+                print("DO NOT USE VALIDATION")
+            nlvr2.train(nlvr2.train_tuple, nlvr2.valid_tuple)
+
+
+            # Self training 
+            if args.self_train is True:
+
+                # Update the settings of the instance before retraining
+                nlvr2.reinitialize_NLVR2()
+
+                # Retrain with updated settings
+                nlvr2.train(nlvr2.train_tuple, nlvr2.valid_tuple) 
+
+
 
 

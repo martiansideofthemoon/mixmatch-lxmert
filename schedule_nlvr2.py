@@ -29,8 +29,9 @@ def get_run_id():
 top_details = "Running partial data experiments on NLVR2 with LXMERT"
 
 hyperparameters = [
-    [('extra_flags',), ['', '--num_images 1000', '--num_images 5000', '--num_images 10000', '--num_images 25000', '--num_images 50000']],
+    [('extra_flags',), ['--num_images 10000 --self_train True']],
 ]
+
 
 run_id = int(get_run_id())
 key_hyperparameters = [x[0] for x in hyperparameters]
@@ -87,3 +88,4 @@ for combo in combinations:
 for script in scripts:
     command = "sbatch %s" % script
     print(subprocess.check_output(command, shell=True))
+cess.check_output(command, shell=True))

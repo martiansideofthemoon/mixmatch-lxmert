@@ -6,5 +6,7 @@ schedulers/*.sh
 logs/*.txt
 lxmert-venv
 saved_models/*_*
-data/
-
+/data
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
