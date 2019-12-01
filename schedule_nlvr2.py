@@ -29,7 +29,7 @@ def get_run_id():
 top_details = "Running partial data experiments on NLVR2 with LXMERT"
 
 hyperparameters = [
-    [('extra_flags',), ['', '--num_images 10000', '--num_images 10000 --self_train', '--num_images 10000 --self_train --mixup', '--num_images 10000 --mixup']],
+    [('extra_flags',), ['--num_images 25000 --mixup', '--num_images 50000 --mixup']],
 ]
 
 
