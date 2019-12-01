@@ -29,7 +29,7 @@ def get_run_id():
 top_details = "Running partial data experiments on NLVR2 with LXMERT"
 
 hyperparameters = [
-    [('extra_flags',), ['--num_images 10000 --self_train True']],
+    [('extra_flags',), ['', '--num_images 10000', '--num_images 10000 --self_train', '--num_images 10000 --self_train --mixup', '--num_images 10000 --mixup']],
 ]
 
 
@@ -79,7 +79,7 @@ for combo in combinations:
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M") + "\n" + \
         top_details + "\n" + \
         lower_details + "\n\n"
-    with open("logs/expts.txt", "a") as f:
+    with open("logs/expts_nlvr2.txt", "a") as f:
         f.write(output)
     # For the next job
     run_id += 1
@@ -88,4 +88,3 @@ for combo in combinations:
 for script in scripts:
     command = "sbatch %s" % script
     print(subprocess.check_output(command, shell=True))
-cess.check_output(command, shell=True))

@@ -78,7 +78,7 @@ for combo in combinations:
         datetime.datetime.now().strftime("%Y-%m-%d %H:%M") + "\n" + \
         top_details + "\n" + \
         lower_details + "\n\n"
-    with open("logs/expts.txt", "a") as f:
+    with open("logs/expts_vqa.txt", "a") as f:
         f.write(output)
     # For the next job
     run_id += 1

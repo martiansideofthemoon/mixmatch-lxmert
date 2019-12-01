@@ -23,7 +23,7 @@ class NLVR2Model(nn.Module):
         )
         self.logit_fc.apply(self.lxrt_encoder.model.init_bert_weights)
 
-    def forward(self, feat, pos, sent):
+    def forward(self, feat, pos, sent, mixup_tensor_fn=None):
         """
         :param feat: b, 2, o, f
         :param pos:  b, 2, o, 4
@@ -50,6 +50,11 @@ class NLVR2Model(nn.Module):
         # Compute logit of answers
         logit = self.logit_fc(x)
 
-        return logit
+        # If random indices are provided, shuffle them
+        if mixup_tensor_fn:
+            mixed_feats = mixup_tensor_fn(tensor=x)
+            mixed_logits = self.logit_fc(mixed_feats)
+        else:
+            mixed_logits = None
 
-
+        return logit, mixed_logits
