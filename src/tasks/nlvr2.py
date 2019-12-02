@@ -283,7 +283,7 @@ class NLVR2MixMatch(NLVR2BaseClass):
 
 class NLVR2(NLVR2BaseClass):
     def __init__(self):
-        super(NLVR2MixMatch, self).__init__()
+        super(NLVR2, self).__init__()
         self.train_tuple = get_tuple(
             args.train, bs=args.batch_size, shuffle=True, drop_last=True, fraction=args.train_data_fraction
         )
