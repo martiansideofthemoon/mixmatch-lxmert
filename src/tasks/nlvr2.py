@@ -123,6 +123,111 @@ class NLVR2BaseClass:
         self.model.load_state_dict(state_dict)
 
 
+class NLVR2BatchSelfTrain(NLVR2BaseClass):
+    def __init__(self):
+        super(NLVR2BatchSelfTrain, self).__init__()
+        self.prepare_train_data()
+        self.prepare_valid_data()
+        self.setup_model()
+        self.setup_losses()
+        self.setup_optimizers()
+
+        self.output = args.output
+        os.makedirs(self.output, exist_ok=True)
+
+    def prepare_train_data(self):
+        label_dset = NLVR2Dataset(splits=args.train,
+                                  fraction=args.train_data_fraction)
+        unlabel_dset = NLVR2Dataset(splits=args.train,
+                                    fraction=args.train_data_fraction,
+                                    remove_labels=True,
+                                    keep_reverse=True)
+        print("Final Labelled / Unlabelled Split = %d / %d" % (len(label_dset), len(unlabel_dset)))
+        label_tset = NLVR2TorchDataset(label_dset)
+        unlabel_tset = NLVR2TorchDataset(unlabel_dset)
+
+        label_data_loader = DataLoader(
+            label_tset, batch_size=args.batch_size // 2,
+            shuffle=True, num_workers=args.num_workers,
+            drop_last=True, pin_memory=True
+        )
+        unlabel_data_loader = DataLoader(
+            unlabel_tset, batch_size=args.batch_size // 2,
+            shuffle=True, num_workers=args.num_workers,
+            drop_last=True, pin_memory=True
+        )
+
+        evaluator = NLVR2Evaluator(label_dset)
+
+        self.train_tuple = MixMatchDataTuple(dataset=label_dset,
+                                             loader=label_data_loader,
+                                             unlabel_dataset=unlabel_dset,
+                                             unlabel_loader=unlabel_data_loader,
+                                             evaluator=evaluator)
+
+    def setup_losses(self):
+        self.mce_loss = nn.CrossEntropyLoss(ignore_index=-1)
+
+    def train(self, train_tuple, eval_tuple):
+        label_dataset, label_loader, unlabel_dataset, unlabel_loader, evaluator = train_tuple
+        iter_wrapper = (lambda x: tqdm(x, total=len(label_loader))) if args.tqdm else (lambda x: x)
+
+        best_valid = 0.
+        for epoch in range(args.epochs):
+            quesid2ans = {}
+            for i, ((label_ques_id, label_feats, label_boxes, label_sents, label),
+                    (unlabel_ques_id, unlabel_feats, unlabel_boxes, unlabel_sents)) in iter_wrapper(enumerate(zip(label_loader, unlabel_loader))):
+                self.optim.zero_grad()
+
+                label_feats, label_boxes, label = label_feats.cuda(), label_boxes.cuda(), label.cuda()
+                unlabel_feats, unlabel_boxes = unlabel_feats.cuda(), unlabel_boxes.cuda()
+
+                # Find current predictions on the unlabeled batch
+                self.model.eval()
+                _, _, preds, _ = self.single_predict((unlabel_ques_id, unlabel_feats, unlabel_boxes, unlabel_sents))
+
+                # Run a forward pass on labelled and unlabelled examples
+                self.model.train()
+
+                all_feats = torch.cat([label_feats, unlabel_feats], dim=0)
+                all_boxes = torch.cat([label_boxes, unlabel_boxes], dim=0)
+                all_sents = label_sents + unlabel_sents
+                all_labels = torch.cat([label, preds], dim=0)
+
+                all_logits, _, _ = self.model(feat=all_feats,
+                                              pos=all_boxes,
+                                              sent=all_sents)
+
+                loss = self.mce_loss(all_logits, all_labels)
+
+                loss.backward()
+                nn.utils.clip_grad_norm_(self.model.parameters(), 5.)
+                self.optim.step()
+
+                score, predict = all_logits[:label.shape[0]].max(1)
+                for qid, l in zip(label_ques_id, predict.cpu().numpy()):
+                    quesid2ans[qid] = l
+
+            log_str = "\nEpoch %d: Train %0.2f\n" % (epoch, evaluator.evaluate(quesid2ans) * 100.)
+
+            if self.valid_tuple is not None:  # Do Validation
+                valid_score = self.evaluate(eval_tuple)
+                if valid_score > best_valid:
+                    best_valid = valid_score
+                    self.save("BEST")
+
+                log_str += "Epoch %d: Valid %0.2f\n" % (epoch, valid_score * 100.) + \
+                           "Epoch %d: Best %0.2f\n" % (epoch, best_valid * 100.)
+
+            print(log_str, end='')
+
+            with open(self.output + "/log.log", 'a') as f:
+                f.write(log_str)
+                f.flush()
+
+        self.save("LAST")
+
+
 class NLVR2MixMatch(NLVR2BaseClass):
     def __init__(self):
         super(NLVR2MixMatch, self).__init__()
@@ -406,6 +511,8 @@ if __name__ == "__main__":
 
     if args.mixmatch:
         nlvr2 = NLVR2MixMatch()
+    elif args.batch_self_train:
+        nlvr2 = NLVR2BatchSelfTrain()
     else:
         nlvr2 = NLVR2()
 

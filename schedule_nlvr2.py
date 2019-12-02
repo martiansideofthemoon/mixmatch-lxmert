@@ -26,10 +26,11 @@ def get_run_id():
         run_id = len(expts) / 5
     return run_id
 
-top_details = "Running partial data experiments on NLVR2 with LXMERT"
+top_details = "Tuning hyperparameters for mixmatch setup"
 
 hyperparameters = [
-    [('extra_flags',), ['', '--train_data_fraction 0.1', '--train_data_fraction 0.25', '--train_data_fraction 0.5']],
+    [('batch_size',), [32]],
+    [('extra_flags',), ['--train_data_fraction 0.1 --batch_self_train', '--train_data_fraction 0.2 --batch_self_train', '--train_data_fraction 0.5 --batch_self_train']],
 ]
 
 

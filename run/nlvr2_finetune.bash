@@ -13,6 +13,6 @@ PYTHONPATH=$PYTHONPATH:./src \
     --train train --valid valid \
     --llayers 9 --xlayers 5 --rlayers 5 \
     --loadLXMERT snap/pretrained/model \
-    --batchSize 24 --optim bert --lr 5e-5 --epochs 10 \
+    --batchSize 32 --optim bert --lr 5e-5 --epochs 10 \
     --tqdm --output $output ${@:3}
 
