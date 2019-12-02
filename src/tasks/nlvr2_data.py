@@ -30,7 +30,7 @@ class NLVR2Dataset:
         "uid": "nlvr2_train_0"
     }
     """
-    def __init__(self, splits: str):
+    def __init__(self, splits: str, fraction=None, remove_labels=False, keep_reverse=False):
         self.name = splits
         self.splits = splits.split(',')
 
@@ -42,6 +42,18 @@ class NLVR2Dataset:
             self.data.extend(json.load(open("data/nlvr2/%s.json" % split)))
 
         print("Load %d data from split(s) %s." % (len(self.data), self.name))
+
+        if fraction:
+            assert fraction >= 0.0 and fraction <= 1.0
+            frac_length = int(fraction * len(self.data))
+            if keep_reverse:
+                self.data = self.data[frac_length:]
+            else:
+                self.data = self.data[:frac_length]
+
+        if remove_labels:
+            for datum in self.data:
+                datum.pop("label", None)
 
         # List to dict (for evaluation and others)
         self.id2datum = {

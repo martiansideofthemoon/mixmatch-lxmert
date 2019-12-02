@@ -49,6 +49,9 @@ def parse_args():
     parser.add_argument('--num_images', type=float, default=None, help='Number of images to load in SSL setting')
     parser.add_argument('--beta_distro_alpha', type=float, default=0.75, help='Number of images to load in SSL setting')
     parser.add_argument("--mixup", action='store_const', default=False, const=True)
+    parser.add_argument("--mixmatch", action='store_const', default=False, const=True)
+    parser.add_argument('--mixmatch_label_fraction', type=float, default=0.5, help='Fraction of labelled examples in MixMatch')
+    parser.add_argument('--mixmatch_unlabel_weight', type=float, default=1.0, help='Weight for the unlabeled portion of mixmatch loss')
 
     # Debugging
     parser.add_argument('--output', type=str, default='snap/test')

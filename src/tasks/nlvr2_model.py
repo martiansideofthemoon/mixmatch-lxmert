@@ -52,9 +52,9 @@ class NLVR2Model(nn.Module):
 
         # If random indices are provided, shuffle them
         if mixup_tensor_fn:
-            mixed_feats = mixup_tensor_fn(tensor=x)
+            mixed_feats = mixup_tensor_fn(tensor1=x)
             mixed_logits = self.logit_fc(mixed_feats)
         else:
             mixed_logits = None
 
-        return logit, mixed_logits
+        return logit, mixed_logits, x
