@@ -52,6 +52,7 @@ def parse_args():
     parser.add_argument("--mixmatch", action='store_const', default=False, const=True)
     parser.add_argument('--mixmatch_label_fraction', type=float, default=0.5, help='Fraction of labelled examples in MixMatch')
     parser.add_argument('--mixmatch_unlabel_weight', type=float, default=1.0, help='Weight for the unlabeled portion of mixmatch loss')
+    parser.add_argument('--train_data_fraction', type=float, default=None, help='Percentage of training data to keep in partial data experiments')
 
     # Debugging
     parser.add_argument('--output', type=str, default='snap/test')

@@ -18,8 +18,8 @@ DataTuple = collections.namedtuple("DataTuple", 'dataset loader evaluator')
 MixMatchDataTuple = collections.namedtuple("DataTuple", 'dataset loader unlabel_dataset unlabel_loader evaluator')
 
 
-def get_tuple(splits: str, bs: int, shuffle=False, drop_last=False) -> DataTuple:
-    dset = NLVR2Dataset(splits)
+def get_tuple(splits: str, bs: int, shuffle=False, drop_last=False, fraction=None) -> DataTuple:
+    dset = NLVR2Dataset(splits, fraction=fraction)
     tset = NLVR2TorchDataset(dset)
     evaluator = NLVR2Evaluator(dset)
     data_loader = DataLoader(
@@ -45,8 +45,8 @@ def mixup_tensor1_tensor2(tensor1, tensor2, mixup_parameters):
     lambda_sample = mixup_parameters["lambda_sample"]
     assert tensor1.shape == tensor2.shape
     assert tensor1.shape[0] == lambda_sample.shape[0]
-    mixup_feats = lambda_sample * tensor1 + (1.0 - lambda_sample) * tensor2
-    return mixup_feats
+    mixup_tensor = lambda_sample * tensor1 + (1.0 - lambda_sample) * tensor2
+    return mixup_tensor
 
 
 class NLVR2BaseClass:
@@ -285,7 +285,7 @@ class NLVR2(NLVR2BaseClass):
     def __init__(self):
         super(NLVR2MixMatch, self).__init__()
         self.train_tuple = get_tuple(
-            args.train, bs=args.batch_size, shuffle=True, drop_last=True
+            args.train, bs=args.batch_size, shuffle=True, drop_last=True, fraction=args.train_data_fraction
         )
         self.prepare_valid_data()
 
