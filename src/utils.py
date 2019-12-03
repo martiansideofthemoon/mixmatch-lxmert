@@ -28,7 +28,7 @@ def load_obj_tsv(fname, topk=None, leftover=False):
     print("Start to load Faster-RCNN detected objects from %s" % fname)
     with open(fname) as f:
         reader = csv.DictReader(f, FIELDNAMES, delimiter="\t")
-        for i, item in enumerate(reader):
+        for i, item in tqdm.tqdm(enumerate(reader)):
 
             if (leftover and i > topk) or leftover is False:
                 for key in ['img_h', 'img_w', 'num_boxes']:

@@ -29,8 +29,9 @@ def get_run_id():
 top_details = "Tuning hyperparameters for mixmatch setup"
 
 hyperparameters = [
+    [('num_epochs',), [4]],
     [('batch_size',), [32]],
-    [('extra_flags',), ['--train_data_fraction 0.1 --batch_self_train', '--train_data_fraction 0.2 --batch_self_train', '--train_data_fraction 0.5 --batch_self_train']],
+    [('extra_flags',), ['--num_images 25000 --self_train', '--num_images 50000 --self_train']],
 ]
 
 

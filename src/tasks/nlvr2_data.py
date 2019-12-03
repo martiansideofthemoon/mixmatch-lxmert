@@ -73,7 +73,7 @@ FIELDNAMES would be keys in the dict returned by load_obj_tsv.
 """
 class NLVR2TorchDataset(Dataset):
 
-    def __init__(self, dataset: NLVR2Dataset):
+    def __init__(self, dataset: NLVR2Dataset, img_data=[]):
         super().__init__()
         self.raw_dataset = dataset
 
@@ -87,24 +87,24 @@ class NLVR2TorchDataset(Dataset):
             topk = -1
 
         # Loading detection features to img_data
-        img_data = []
+        if len(img_data) == 0:
 
-        if 'combined_train' in dataset.splits:
-            # returns all the images 
-            img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/train_obj36.tsv', topk=None))
+            if 'combined_train' in dataset.splits:
+                # returns all the images 
+                img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/train_obj36.tsv', topk=None))
 
-        if 'self_train' in dataset.splits:
-            # returns the images other than topk
-            img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/train_obj36.tsv', topk=topk, leftover=True))
+            if 'self_train' in dataset.splits:
+                # returns the images other than topk
+                img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/train_obj36.tsv', topk=topk, leftover=True))
 
-        elif 'train' in dataset.splits:
-            img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/train_obj36.tsv', topk=topk))
+            elif 'train' in dataset.splits:
+                img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/train_obj36.tsv', topk=topk))
 
-        if 'valid' in dataset.splits:
-            img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/valid_obj36.tsv', topk=topk))
+            if 'valid' in dataset.splits:
+                img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/valid_obj36.tsv', topk=topk))
 
-        if 'test' in dataset.name:
-            img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/test_obj36.tsv', topk=topk))
+            if 'test' in dataset.name:
+                img_data.extend(load_obj_tsv('data/nlvr2_imgfeat/test_obj36.tsv', topk=topk))
 
         self.imgid2img = {}
         for img_datum in img_data:

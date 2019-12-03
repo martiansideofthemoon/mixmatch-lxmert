@@ -18,9 +18,9 @@ DataTuple = collections.namedtuple("DataTuple", 'dataset loader evaluator')
 MixMatchDataTuple = collections.namedtuple("DataTuple", 'dataset loader unlabel_dataset unlabel_loader evaluator')
 
 
-def get_tuple(splits: str, bs: int, shuffle=False, drop_last=False, fraction=None) -> DataTuple:
+def get_tuple(splits: str, bs: int, shuffle=False, drop_last=False, fraction=None, img_data=None) -> DataTuple:
     dset = NLVR2Dataset(splits, fraction=fraction)
-    tset = NLVR2TorchDataset(dset)
+    tset = NLVR2TorchDataset(dset, img_data=img_data)
     evaluator = NLVR2Evaluator(dset)
     data_loader = DataLoader(
         tset, batch_size=bs,
@@ -91,7 +91,8 @@ class NLVR2BaseClass:
             valid_bsize = 2048 if args.multiGPU else 512
             self.valid_tuple = get_tuple(
                 args.valid, bs=valid_bsize,
-                shuffle=False, drop_last=False
+                shuffle=False, drop_last=False,
+                img_data=[]
             )
         else:
             self.valid_tuple = None
@@ -143,8 +144,9 @@ class NLVR2BatchSelfTrain(NLVR2BaseClass):
                                     remove_labels=True,
                                     keep_reverse=True)
         print("Final Labelled / Unlabelled Split = %d / %d" % (len(label_dset), len(unlabel_dset)))
-        label_tset = NLVR2TorchDataset(label_dset)
-        unlabel_tset = NLVR2TorchDataset(unlabel_dset)
+        self.img_data = []
+        label_tset = NLVR2TorchDataset(label_dset, img_data=self.img_data)
+        unlabel_tset = NLVR2TorchDataset(unlabel_dset, img_data=self.img_data)
 
         label_data_loader = DataLoader(
             label_tset, batch_size=args.batch_size // 2,
@@ -250,8 +252,9 @@ class NLVR2MixMatch(NLVR2BaseClass):
                                     remove_labels=True,
                                     keep_reverse=True)
         print("Final Labelled / Unlabelled Split = %d / %d" % (len(label_dset), len(unlabel_dset)))
-        label_tset = NLVR2TorchDataset(label_dset)
-        unlabel_tset = NLVR2TorchDataset(unlabel_dset)
+        self.img_data = []
+        label_tset = NLVR2TorchDataset(label_dset, img_data=self.img_data)
+        unlabel_tset = NLVR2TorchDataset(unlabel_dset, img_data=self.img_data)
 
         label_data_loader = DataLoader(
             label_tset, batch_size=args.batch_size // 2,
@@ -389,8 +392,9 @@ class NLVR2MixMatch(NLVR2BaseClass):
 class NLVR2(NLVR2BaseClass):
     def __init__(self):
         super(NLVR2, self).__init__()
+        self.img_data = []
         self.train_tuple = get_tuple(
-            args.train, bs=args.batch_size, shuffle=True, drop_last=True, fraction=args.train_data_fraction
+            args.train, bs=args.batch_size, shuffle=True, drop_last=True, fraction=args.train_data_fraction, img_data=self.img_data
         )
         self.prepare_valid_data()
 
@@ -433,7 +437,7 @@ class NLVR2(NLVR2BaseClass):
                     mixup_tensor_fn = partial(shuffle_mixup_tensor, mixup_parameters=mixup_parameters)
                     # Apply mixup on one-hot labels
                     one_hot_labels = torch.nn.functional.one_hot(label, num_classes=2)
-                    mixup_labels = mixup_tensor_fn(tensor=one_hot_labels)
+                    mixup_labels = mixup_tensor_fn(tensor1=one_hot_labels)
                     # Obtain usual logits and logits after mixing LXRT features
                     logit, mixed_logits, _ = self.model(feats, boxes, sent, mixup_tensor_fn)
                     # Usual CE loss
@@ -478,7 +482,8 @@ class NLVR2(NLVR2BaseClass):
         # Update labels in dset for self_training
         # Create a new tuple of remaining data samples
         splits = 'self_train'
-        leftover_tuple = get_tuple(splits, bs=args.batch_size, shuffle=False, drop_last=False)
+        self.img_data = []
+        leftover_tuple = get_tuple(splits, bs=args.batch_size, shuffle=False, drop_last=False, img_data=self.img_data)
 
         quesid2ans = self.predict(leftover_tuple)
         dset, loader, evaluator = leftover_tuple
@@ -494,7 +499,7 @@ class NLVR2(NLVR2BaseClass):
     def reinitialize(self):
             # Update train_tuple
             dset = self.updated_dataset_for_self_train()
-            tset = NLVR2TorchDataset(dset)
+            tset = NLVR2TorchDataset(dset, img_data=self.img_data)
             evaluator = NLVR2Evaluator(dset)
             data_loader = DataLoader(
                 tset, batch_size=args.batch_size,
@@ -526,13 +531,13 @@ if __name__ == "__main__":
         if 'hidden' in args.test:
             nlvr2.predict(
                 get_tuple(args.test, bs=args.batch_size,
-                          shuffle=False, drop_last=False),
+                          shuffle=False, drop_last=False, img_data=[]),
                 dump=os.path.join(args.output, 'hidden_predict.csv')
             )
         elif 'test' in args.test or 'valid' in args.test:
             result = nlvr2.evaluate(
                 get_tuple(args.test, bs=args.batch_size,
-                          shuffle=False, drop_last=False),
+                          shuffle=False, drop_last=False, img_data=[]),
                 dump=os.path.join(args.output, '%s_predict.csv' % args.test)
             )
             print(result)
