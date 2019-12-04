@@ -5,7 +5,7 @@
 #SBATCH --partition=2080ti-long
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=6
-#SBATCH --mem=45GB
+#SBATCH --mem=60GB
 #SBATCH -d singleton
 
 # Experiment Details :- {top_details}
@@ -29,6 +29,6 @@ PYTHONPATH=$PYTHONPATH:./src \
     --train train --valid valid \
     --llayers 9 --xlayers 5 --rlayers 5 \
     --loadLXMERT snap/pretrained/model \
-    --batchSize 32 --optim bert --lr 5e-5 --epochs 4 \
+    --batchSize {batch_size} --optim bert --lr 5e-5 --epochs {num_epochs} \
     --tqdm --output $output {extra_flags}
 

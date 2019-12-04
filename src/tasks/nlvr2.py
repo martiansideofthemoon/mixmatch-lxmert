@@ -277,6 +277,7 @@ class NLVR2MixMatch(NLVR2BaseClass):
 
     def setup_losses(self):
         self.mixmatch_loss = nn.KLDivLoss(reduction='batchmean')
+        self.mse_loss = nn.MSELoss()
 
     def sample_beta_max(self, sample_shape):
         lambda_sample = self.beta_distro.sample(sample_shape=sample_shape).cuda()
@@ -351,13 +352,13 @@ class NLVR2MixMatch(NLVR2BaseClass):
                                                              sent=unlabel_sents,
                                                              mixup_tensor_fn=partial(mixup_t1_t2_fn,
                                                                                      tensor2=shuffled_all_lxrt_feats[labels_one_hot.shape[0]:]))
-                mixmatch_unlabeled_log_softmax = torch.nn.functional.log_softmax(mixmatch_unlabeled_logits, dim=1)
+                mixmatch_unlabeled_softmax = torch.nn.functional.softmax(mixmatch_unlabeled_logits, dim=1)
 
                 # Compute losses on two mixed batches separately
                 labeled_loss = self.mixmatch_loss(input=mixmatch_labeled_log_softmax,
                                                   target=mixmatch_labeled_labels)
-                unlabeled_loss = self.mixmatch_loss(input=mixmatch_unlabeled_log_softmax,
-                                                    target=mixmatch_unlabeled_labels)
+                unlabeled_loss = self.mse_loss(input=mixmatch_unlabeled_softmax,
+                                               target=mixmatch_unlabeled_labels)
 
                 loss = labeled_loss + args.mixmatch_unlabel_weight * unlabeled_loss
 
